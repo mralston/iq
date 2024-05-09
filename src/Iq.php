@@ -4,9 +4,11 @@ namespace Mralston\Iq;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Mralston\Iq\Enums\Iq as Enum;
 use Mralston\Iq\Models\Company;
 use Mralston\Iq\Models\Customer;
+use Mralston\Iq\Models\Region;
 use Mralston\Iq\Models\User;
 
 class Iq
@@ -41,7 +43,12 @@ class Iq
                 'EnquirySourceID' => $attrs['enquiry_source'] ?? Enum::DEFAULT_ENQUIRY_SOURCE,
                 'SortName' => $attrs['last_name'],
                 'BranchID' => $rep->BranchId,
-                'Notes' => null, // TODO: Piece this together
+                'Notes' => $this->buildNotes(
+                    $attrs['quote_notes'],
+                    $attrs['additional_notes'],
+                    $attrs['battery_notes'],
+                    $attrs['contract_notes']
+                ),
                 'OwnerId' => $rep->id,
                 'Cat1' => $attrs['category1'] ?? Enum::DEFAULT_CATEGORY,
                 'Cat2' => $attrs['category2'] ?? Enum::DEFAULT_CATEGORY,
@@ -58,24 +65,28 @@ class Iq
                 'AnnualBill' => $attrs['annual_bill'],
                 'TariffId' => $attrs['tariff'] ?? Enum::DEFAULT_TARIFF,
                 'DaylightUsage' => $attrs['daylight_usage'] ?? Enum::DEFAULT_DAYLIGHT_USAGE,
-                'SolarInputFactor' => null, // TODO: Map the solar irradiance zone code from the app to a record from tRegions (note some regions are missing!) and use tRegions.SolarRadiationValue
+                'SolarInputFactor' => $this->getSolarInputFactor($attrs['sap_zone']),
                 'VATExempt' => $attrs['vat_exempt'] ?? Enum::DEFAULT_VAT_EXEMPT,
                 'Sold' => $attrs['sold'] ?? 0,
                 'NoReport' => $attrs['no_report'] ?? 0,
                 'Immersion' => $attrs['immersion'] ?? 0,
-                'FundType', // TODO: Populate value
+                'FundType' => $attrs['fund_type'] ?? 0,
                 'SmartMeter' => $attrs['smart_meter'] ?? 0,
                 'GasBill' => $attrs['gas_bill'] ?? 0,
                 'LecBill' => $attrs['electricity_bill'] ?? 0,
-                'Addressee', // TODO: Populate value
+                'Addressee' => $attrs['salutation'] ?? null,
                 'ConnectId' => $attrs['connect'] ?? 0,
-                'CanSMS', // TODO: Set to 1 if phone number begins with 07
+                'CanSMS' => intval($this->canSms(
+                    $attrs['phone1'] ?? null,
+                        $attrs['phone2'] ?? null,
+                        $attrs['phone3'] ?? null
+                )),
                 'CSI' => $attrs['csi'] ?? 0,
                 'Sent' => $attrs['sent'] ?? 0,
                 'WouldRefer' => $attrs['would_refer'] ?? 0,
                 'TileTypeId', // TODO: Populate value
                 'ArchiveId' => 0,
-                'RepId',
+                /* RepId includes customer ID, so it is created after the customer record is created */
                 'ExecutionDate' => $attrs['execution_date'] ?? null,
                 'ReasonForCancel' => 0,
                 'InProgress' => $attrs['in_progress'] ?? 0,
@@ -96,6 +107,11 @@ class Iq
                 'AppointmentId' => $attrs['appointment_id'],
             ]);
 
+            // Fill in RepId (repository ID) after customer record has been created as it contains the customer ID
+            $customer->update([
+                'RepId' => $this->buildRepositoryId($attrs['post_code'], $attrs['last_name'], $customer->id)
+            ]);
+
             // TODO: Create InstallNote
 
             // TODO: Create CustomerLog
@@ -110,5 +126,59 @@ class Iq
 
             return $customer;
         });
+    }
+
+    private function canSms(...$phoneNumbers): bool
+    {
+        foreach (func_get_args() as $phoneNumber) {
+            if (Str::of($phoneNumber)->substr(0, 2) == '07') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function buildNotes(?string $quoteNotes = null, ?string $additionalNotes = null, ?string $batteryNotes = null, ?string $contractNotes = null): string
+    {
+        $compiledNotes = '***** ' .
+            Carbon::now()->format('d/m/Y h:i A') .
+            ' (Quote Notes) *****' .
+            "\r\n";
+
+        if (!empty($quoteNotes)) {
+            $compiledNotes .= $quoteNotes;
+        }
+
+        if (!empty($additionalNotes)) {
+            $compiledNotes .= ' ' . $additionalNotes;
+        }
+
+        if (!empty($batteryNotes)) {
+            $compiledNotes .= ' ' . $batteryNotes;
+        }
+
+        if (!empty($contractNotes)) {
+            $compiledNotes .= ' ' . $contractNotes;
+        }
+
+        return $compiledNotes;
+    }
+
+    private function getSolarInputFactor(string $sapZoneCode): ?string
+    {
+        try {
+            return Region::firstWhere('ZoneId', $sapZoneCode)
+                ->SolarRadiationValue;
+        } catch (\Throwable $ex) {
+            return null;
+        }
+    }
+
+    private function buildRepositoryId(string $postCode, string $surname, $customerId)
+    {
+        return $postCode . '_' .
+            Str::of($surname)->upper()->substr(0, 3) . '_' .
+            $customerId;
     }
 }
