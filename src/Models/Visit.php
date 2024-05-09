@@ -10,6 +10,8 @@ class Visit extends Model
     protected $table = 'tVisit';
     protected $primaryKey = 'Id';
     
+    public $timestamps = false;
+    
     protected $fillable = [
         'CustomerId',
         'VisitDate',

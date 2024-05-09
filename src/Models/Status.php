@@ -3,18 +3,19 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Mralston\Iq\Models\Scopes\StatusScope;
 
-class User extends Model
+class Status extends Model
 {
     protected $connection = 'iq';
-    protected $table = 'tUsers';
+    protected $table = 'tLists';
     protected $primaryKey = 'Id';
-
+    
     const CREATED_AT = 'Created';
     const UPDATED_AT = 'Updated';
     
-    protected function branch()
+    protected static function booted()
     {
-        return $this->belongsTo(Branch::class);
+        static::addGlobalScope(new StatusScope);
     }
 }

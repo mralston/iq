@@ -8,6 +8,8 @@ class Log extends Model
 {
     protected $connection = 'iq';
     protected $table = 'logtable';
+    
+    const UPDATED_AT = false;
 
     protected $fillable = [
         'quoteid',

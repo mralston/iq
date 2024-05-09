@@ -4,19 +4,16 @@ namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CustomerLog extends Model
+class SolarIrradianceZone extends Model
 {
     protected $connection = 'iq';
-    protected $table = 'tCustLog';
+    protected $table = 'tRegions';
     protected $primaryKey = 'Id';
-    
+
     public $timestamps = false;
     
-    protected $fillable = [
-        'CustomerId',
-        'Name',
-        'Postcode',
-        'SortName',
-    ];
-
+    public static function byCode($code)
+    {
+        return static::firstWhere('ZoneId', $code);
+    }
 }

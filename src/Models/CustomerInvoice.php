@@ -10,6 +10,8 @@ class CustomerInvoice extends Model
     protected $table = 'tCustomerInvoice';
     protected $primaryKey = 'Id';
     
+    public $timestamps = false;
+    
     protected $fillable = [
         'CustomerId',
         'InvDate',

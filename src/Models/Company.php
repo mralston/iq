@@ -10,6 +10,8 @@ class Company extends Model
     protected $table = 'tUs';
     protected $primaryKey = 'Id';
     
+    public $timestamps = false;
+    
     protected $fillable = [
         'LastCustInvoice',
     ];

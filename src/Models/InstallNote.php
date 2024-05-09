@@ -8,6 +8,8 @@ class InstallNote extends Model
 {
     protected $connection = 'iq';
     protected $table = 'tInstallNotes';
+    
+    public $timestamps = false;
 
     protected $fillable = [
         'CustomerId',

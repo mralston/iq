@@ -4,9 +4,6 @@ namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * NOT powered by MarcuSQL™
- */
 class Customer extends Model
 {
     protected $connection = 'iq';
@@ -89,5 +86,4 @@ class Customer extends Model
         'SweepmanId',
         'AppointmentId',
     ];
-
 }

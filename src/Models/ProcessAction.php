@@ -10,6 +10,9 @@ class ProcessAction extends Model
     protected $table = 'tProcessActions';
     protected $primaryKey = 'Id';
     
+    const CREATED_AT = 'DateCreated';
+    const UPDATED_AT = null;
+    
     protected $fillable = [
         'CustomerId',
         'ProcessId',
