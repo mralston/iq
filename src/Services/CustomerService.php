@@ -5,11 +5,13 @@ namespace Mralston\Iq\Services;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Mralston\Iq\Enums\Iq as Enum;
+use Mralston\Iq\Enums\Constants;
 use Mralston\Iq\Models\Branch;
 use Mralston\Iq\Models\Company;
 use Mralston\Iq\Models\Customer;
+use Mralston\Iq\Models\CustomerInvoice;
 use Mralston\Iq\Models\EnquirySource;
+use Mralston\Iq\Models\InstallNote;
 use Mralston\Iq\Models\SolarIrradianceZone;
 use Mralston\Iq\Models\Status;
 use Mralston\Iq\Models\Tariff;
@@ -27,6 +29,8 @@ class CustomerService
     protected ?SolarIrradianceZone $solarIrradianceZone = null;
     protected ?Status $status = null;
     protected ?EnquirySource $enquirySource = null;
+    protected ?VatRate $vatRate = null;
+    protected ?TemplateType $templateType = null;
     
     public function withAttrs(?array $attrs = []): self
     {
@@ -75,6 +79,18 @@ class CustomerService
         $this->tariff = $tariff;
         return $this;
     }
+    
+    public function withVatRate(?VatRate $vatRate = null): self
+    {
+        $this->vatRate = $vatRate;
+        return $this;
+    }
+    
+    public function withTemplateType(?TemplateType $templateType = null): self
+    {
+        $this->templateType = $templateType;
+        return $this;
+    }
 
     public function create(): Customer
     {
@@ -99,15 +115,15 @@ class CustomerService
                     $this->attrs['last_name']
                 ])->join(' '),
                 'Email' => $this->attrs['email'],
-                'TypeId' => $this->attrs['type_id'] ?? Enum::DEFAULT_TYPE_ID,
-                'InitialDate' => $this->attrs['contract_signed_at'],
+                'TypeId' => $this->attrs['type_id'] ?? Constants::DEFAULT_TYPE_ID,
+                'InitialDate' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
                 'LastDate' => $this->attrs['last_date'] ?? Carbon::now(),
                 'NextDate' => $this->attrs['next_date'] ?? Carbon::now(),
-                'StatusID' => optional($this->status)->Id ?? Enum::DEFAULT_STATUS_ID,
-                'IndTypeID' => $this->attrs['ind_type_id'] ?? Enum::DEFAULT_INDIVIDUAL_TYPE,
-                'CustType' => $this->attrs['customer_type'] ?? Enum::DEFAULT_CUSTOMER_TYPE,
-                'EnquirySourceID' => optional($this->enquirySource)->Id ?? Enum::DEFAULT_ENQUIRY_SOURCE,
-                'SortName' => $this->attrs['last_name'],
+                'StatusID' => optional($this->status)->Id ?? Constants::DEFAULT_CUSTOMER_STATUS_ID,
+                'IndTypeID' => $this->attrs['ind_type_id'] ?? Constants::DEFAULT_INDIVIDUAL_TYPE,
+                'CustType' => $this->attrs['customer_type'] ?? Constants::DEFAULT_CUSTOMER_TYPE,
+                'EnquirySourceID' => optional($this->enquirySource)->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
+                'SortName' => Str::of($this->attrs['last_name'])->upper()->trim(),
                 'BranchID' => optional($this->branch)->Id ?? optional($this->rep)->BranchId,
                 'Notes' => $this->buildNotes(
                     $this->attrs['quote_notes'] ?? null,
@@ -116,23 +132,23 @@ class CustomerService
                     $this->attrs['contract_notes'] ?? null
                 ),
                 'OwnerId' => $this->rep->id,
-                'Cat1' => $this->attrs['category1'] ?? Enum::DEFAULT_CATEGORY,
-                'Cat2' => $this->attrs['category2'] ?? Enum::DEFAULT_CATEGORY,
-                'Cat3' => $this->attrs['category3'] ?? Enum::DEFAULT_CATEGORY,
-                'Cat4' => $this->attrs['category4'] ?? Enum::DEFAULT_CATEGORY,
-                'Cat5' => $this->attrs['category5'] ?? Enum::DEFAULT_CATEGORY,
+                'Cat1' => $this->attrs['category1'] ?? Constants::DEFAULT_CATEGORY,
+                'Cat2' => $this->attrs['category2'] ?? Constants::DEFAULT_CATEGORY,
+                'Cat3' => $this->attrs['category3'] ?? Constants::DEFAULT_CATEGORY,
+                'Cat4' => $this->attrs['category4'] ?? Constants::DEFAULT_CATEGORY,
+                'Cat5' => $this->attrs['category5'] ?? Constants::DEFAULT_CATEGORY,
                 'Companyid' => optional($this->company)->Id,
-                'IndustryTypeId' => $this->attrs['industry_type_id'] ?? Enum::DEFAULT_INDUSTRY_TYPE,
-                'EnquiryType' => $this->attrs['enquiry_type'] ?? Enum::DEFAULT_ENQUIRY_TYPE,
+                'IndustryTypeId' => $this->attrs['industry_type_id'] ?? Constants::DEFAULT_INDUSTRY_TYPE,
+                'EnquiryType' => $this->attrs['enquiry_type'] ?? Constants::DEFAULT_ENQUIRY_TYPE,
                 'ImportId' => $this->attrs['model_id'],
-                'OtherId' => $this->attrs['other_id'] ?? Enum::DEFAULT_INTEGER,
+                'OtherId' => $this->attrs['other_id'] ?? Constants::DEFAULT_INTEGER,
                 'LastUser' => config('iq.auto_user'),
-                'PricePerKWH' => Enum::DEFAULT_PRICE_PER_KWH,
+                'PricePerKWH' => Constants::DEFAULT_PRICE_PER_KWH,
                 'AnnualBill' => $this->attrs['annual_bill'],
-                'TariffId' => optional($this->tariff)->Id ?? Enum::DEFAULT_TARIFF_ID,
-                'DaylightUsage' => $this->attrs['daylight_usage'] ?? Enum::DEFAULT_DAYLIGHT_USAGE,
+                'TariffId' => optional($this->tariff)->Id ?? Constants::DEFAULT_TARIFF_ID,
+                'DaylightUsage' => $this->attrs['daylight_usage'] ?? Constants::DEFAULT_DAYLIGHT_USAGE,
                 'SolarInputFactor' => optional($this->solarIrradianceZone)->SolarRadiationValue,
-                'VATExempt' => $this->attrs['vat_exempt'] ?? Enum::DEFAULT_VAT_EXEMPT,
+                'VATExempt' => $this->attrs['vat_exempt'] ?? Constants::DEFAULT_VAT_EXEMPT,
                 'Sold' => $this->attrs['sold'] ?? 0,
                 'NoReport' => $this->attrs['no_report'] ?? 0,
                 'Immersion' => $this->attrs['immersion'] ?? 0,
@@ -168,23 +184,92 @@ class CustomerService
             ]);
 
 
-            // TODO: Create InstallNote
+            // Create InstallNote
+            InstallNote::create([
+                'CustomerId' => $customer->id,
+                'UserId' => optional($this->rep)->id,
+                'DateNote' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
+                'Notes' => 'New Install',
+                'StatusId' => 0
+            ]);
 
-            // TODO: Create CustomerLog
+            // Create CustomerLog
+            CustomerLog::create([
+                'CustomerId' => $customer->id,
+                'Name' => collect([
+                    $this->attrs['title'],
+                    $this->attrs['first_name'],
+                    $this->attrs['last_name']
+                ])->join(' '),
+                'Postcode' => $this->attrs['post_code'],
+                'SortName' => Str::of($this->attrs['last_name'])->upper()->trim()
+            ]);
+            
+            // Increment LastOrderNo on company
+            $this->company->update([
+                $this->company->LastOrderNo = $this->company->LastOrderNo + 1
+            ]);
 
-            // TODO: Create Visit
+            // Create Visit
+            Visit::create([
+                'CustomerId' => $customer->Id,
+                'VisitDate' => Carbon::now(),
+                'UserId' => config('iq.auto_user'),
+                'NoPanels' => $this->attrs['panel_quantity'] ?? null,
+                'PanelTypeId' => $this->attrs['panel_type_id'] ?? null,
+                'StatusId' => Constants::DEFAULT_VISIT_STATUS_ID,
+                'DateSold' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
+                'Reference' => 'AU/' . $this->company->LastOrderNo,
+                'TileTypeId' => $this->attrs['tile_type_id'] ?? null,
+                'Scaffold' => $this->attrs['scaffold_required'] ?? null,
+                'ExpiryDate' => Carbon::now()
+            ]);
+            
+            // Increment LastCustInvoice on company
+            $this->company->update([
+                $this->company->LastCustInvoice = $this->company->LastCustInvoice + 1
+            ]);
 
-            // TODO: Create CustomerInvoice
-
-            // TODO: Create ProcessAction for installation of solar / battery / toy products
+            // Create CustomerInvoice
+            CustomerInvoice::create([
+                'CustomerId' => $customer->id,
+                'InvDate' => Carbon::now(),
+                'UserId' => config('iq.auto_user'),
+                'InvoiceNo' => $this->company->LastCustInvoice,
+                'VATRateId' => optional($this->vatRate)->id,
+                'AmountDue' => $this->attrs['contract_price'] ?? null,
+                'OrderId' => null,
+                'Description' => $this->attrs['order_description'] ?? null,
+                'InvType' => $this->attrs['invoice_type'] ?? null,
+                'Commissioned' => 1,
+                'ActAmt' => $this->attrs['contract_price'] ?? null
+            ]);
+            
+            // Create ProcessActions for installation of solar / battery / toy products
+            ProcessTemplate::where('active', 1)
+                ->where('startup', 1)
+                ->where('TemplateTypeId', $this->templateType->Id)
+                ->get()
+                ->each(function ($processTemplate) use ($customer) {
+                    ProcessAction::create([
+                        'CustomerId' => $customer->id,
+                        'ProcessId' => $processTemplatee->Id,
+                        'Description' => $processTemplate->Description,
+                        'DateDue' => Carbon::today()->addDays($processTemplate->ElapseDays),
+                        'DateChecked' => '1899-12-30',
+                        'SequenceId' => $this->templateType->ProcessId,
+                        'BranchId' => Constants::HEAD_OFFICE_BRANCH_ID,
+                        'DecOrProc' => $processTemplate->DecOrProc
+                    ]);
+                });
+                
+            // TODO: execute complete_Process on the startup process
 
             // TODO: Create additional ProcessAction for EV charger??? TBC
 
             return $customer;
         });
     }
-
-
 
     private function buildNotes(?string $quoteNotes = null, ?string $additionalNotes = null, ?string $batteryNotes = null, ?string $contractNotes = null): string
     {
@@ -211,6 +296,4 @@ class CustomerService
 
         return $compiledNotes;
     }
-
-
 }
