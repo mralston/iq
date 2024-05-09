@@ -13,6 +13,9 @@ class Customer extends Model
     protected $table = 'tCustomers';
     protected $primaryKey = 'Id';
     
+    const CREATED_AT = 'Created';
+    const UPDATED_AT = 'Updated';
+    
     protected $fillable = [
         'Name',
         'Address',

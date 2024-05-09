@@ -43,11 +43,11 @@ class Iq
                 'EnquirySourceID' => $attrs['enquiry_source'] ?? Enum::DEFAULT_ENQUIRY_SOURCE,
                 'SortName' => $attrs['last_name'],
                 'BranchID' => $rep->BranchId,
-                'Notes' => $this->buildNotes(
-                    $attrs['quote_notes'],
-                    $attrs['additional_notes'],
-                    $attrs['battery_notes'],
-                    $attrs['contract_notes']
+                'Notes' => static::buildNotes(
+                    $attrs['quote_notes'] ?? null,
+                    $attrs['additional_notes'] ?? null,
+                    $attrs['battery_notes'] ?? null,
+                    $attrs['contract_notes'] ?? null
                 ),
                 'OwnerId' => $rep->id,
                 'Cat1' => $attrs['category1'] ?? Enum::DEFAULT_CATEGORY,
@@ -65,7 +65,7 @@ class Iq
                 'AnnualBill' => $attrs['annual_bill'],
                 'TariffId' => $attrs['tariff'] ?? Enum::DEFAULT_TARIFF,
                 'DaylightUsage' => $attrs['daylight_usage'] ?? Enum::DEFAULT_DAYLIGHT_USAGE,
-                'SolarInputFactor' => $this->getSolarInputFactor($attrs['sap_zone']),
+                'SolarInputFactor' => static::getSolarInputFactor($attrs['sap_zone'] ?? null),
                 'VATExempt' => $attrs['vat_exempt'] ?? Enum::DEFAULT_VAT_EXEMPT,
                 'Sold' => $attrs['sold'] ?? 0,
                 'NoReport' => $attrs['no_report'] ?? 0,
@@ -76,7 +76,7 @@ class Iq
                 'LecBill' => $attrs['electricity_bill'] ?? 0,
                 'Addressee' => $attrs['salutation'] ?? null,
                 'ConnectId' => $attrs['connect'] ?? 0,
-                'CanSMS' => intval($this->canSms(
+                'CanSMS' => intval(static::canSms(
                     $attrs['phone1'] ?? null,
                         $attrs['phone2'] ?? null,
                         $attrs['phone3'] ?? null
@@ -109,7 +109,7 @@ class Iq
 
             // Fill in RepId (repository ID) after customer record has been created as it contains the customer ID
             $customer->update([
-                'RepId' => $this->buildRepositoryId($attrs['post_code'], $attrs['last_name'], $customer->id)
+                'RepId' => static::buildRepositoryId($attrs['post_code'], $attrs['last_name'], $customer->id)
             ]);
 
             // TODO: Create InstallNote
@@ -128,7 +128,7 @@ class Iq
         });
     }
 
-    private function canSms(...$phoneNumbers): bool
+    private static function canSms(...$phoneNumbers): bool
     {
         foreach (func_get_args() as $phoneNumber) {
             if (Str::of($phoneNumber)->substr(0, 2) == '07') {
@@ -139,7 +139,7 @@ class Iq
         return false;
     }
 
-    private function buildNotes(?string $quoteNotes = null, ?string $additionalNotes = null, ?string $batteryNotes = null, ?string $contractNotes = null): string
+    private static function buildNotes(?string $quoteNotes = null, ?string $additionalNotes = null, ?string $batteryNotes = null, ?string $contractNotes = null): string
     {
         $compiledNotes = '***** ' .
             Carbon::now()->format('d/m/Y h:i A') .
@@ -165,7 +165,7 @@ class Iq
         return $compiledNotes;
     }
 
-    private function getSolarInputFactor(string $sapZoneCode): ?string
+    private static function getSolarInputFactor(string $sapZoneCode): ?string
     {
         try {
             return Region::firstWhere('ZoneId', $sapZoneCode)
@@ -175,7 +175,7 @@ class Iq
         }
     }
 
-    private function buildRepositoryId(string $postCode, string $surname, $customerId)
+    private static function buildRepositoryId(string $postCode, string $surname, $customerId)
     {
         return $postCode . '_' .
             Str::of($surname)->upper()->substr(0, 3) . '_' .
