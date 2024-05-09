@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcessTemplate extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'tProcessTemplate';
     protected $primaryKey = 'Id';
 }

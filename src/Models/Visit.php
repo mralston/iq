@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Visit extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'tVisit';
     protected $primaryKey = 'Id';
     

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcessError extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'Process_Errors';
     protected $primaryKey = 'ErrorID';
 

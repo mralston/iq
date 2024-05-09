@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Customer extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'tCustomers';
     protected $primaryKey = 'Id';
     

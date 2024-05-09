@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Log extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'logtable';
 
     protected $fillable = [

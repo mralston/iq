@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InstallNote extends Model
 {
-    protected $connection = 'sqlsrv';
+    protected $connection = 'iq';
     protected $table = 'tInstallNotes';
 
     protected $fillable = [

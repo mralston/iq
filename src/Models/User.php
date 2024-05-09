@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class User extends Model
 {
-    protected $connection = 'sqlsrv';
-    protected $table = 'tUser';
+    protected $connection = 'iq';
+    protected $table = 'tUsers';
     protected $primaryKey = 'Id';
 
 }
