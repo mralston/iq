@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Visit extends Model
 {
     protected $connection = 'iq';
-    protected $table = 'tVisit';
+    protected $table = 'tVisits';
     protected $primaryKey = 'Id';
     
     public $timestamps = false;

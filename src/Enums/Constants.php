@@ -2,7 +2,7 @@
 
 namespace Mralston\Iq\Enums;
 
-class Iq
+class Constants
 {
     public const DEFAULT_INTEGER = 0;
     public const DEFAULT_STRING = '';
