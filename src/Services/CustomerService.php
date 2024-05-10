@@ -41,6 +41,7 @@ class CustomerService
     protected ?TemplateType $templateType = null;
     
     protected ?Customer $customer = null;
+    protected ?Visit $visit = null;
     
     public function withAttrs(?array $attrs = []): self
     {
@@ -120,7 +121,7 @@ class CustomerService
 
             $this->createCustomerLog();
             
-            $this->createVisit();
+            $this->visit = $this->createVisit();
             
             $this->createCustomerInvoice();
             
@@ -224,7 +225,7 @@ class CustomerService
             'WouldRefer' => $this->attrs['would_refer'] ?? 0,
             'TileTypeId' => $this->attrs['tile_type_id'] ?? null, // TODO: Populate value
             'ArchiveId' => 0,
-            'ExecutionDate' => $this->attrs['execution_date'] ?? null,
+            'ExecutionDate' => $this->attrs['finance_execution_date'] ?? '1899-12-30', // TODO: Finance execution date
             'ReasonForCancel' => 0,
             'InProgress' => $this->attrs['in_progress'] ?? 0,
             'Remote' => $this->attrs['remote'] ?? 0,
@@ -239,7 +240,7 @@ class CustomerService
             'quote_updated', // TODO: Populate value
             'ProjectStatus' => $this->attrs['project_status'] ?? 0,
             'DateRebook' => $this->attrs['date_rebook'] ?? '1899-12-30', // TODO: WTF?
-            'EVCharger' => $this->attrs['ev_charger'] ?? null, // TODO: Populate value
+            'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0, // TODO: Populate value
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
         ]);
@@ -294,13 +295,14 @@ class CustomerService
             'CustomerId' => $this->customer->Id,
             'VisitDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
-            'NoPanels' => $this->attrs['panel_quantity'] ?? null,
-            'PanelTypeId' => $this->attrs['panel_type_id'] ?? null,
+            'NoPanels' => $this->attrs['panel_quantity'] ?? null, // TODO: Populate
+            'PanelTypeId' => $this->attrs['panel_type_id'] ?? null, // TODO: Populate
             'StatusId' => Constants::DEFAULT_VISIT_STATUS_ID,
+            'VatRateId' => optional($this->vatRate)->Id, // TODO: Populate
             'DateSold' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
             'Reference' => 'AU/' . $this->company->LastOrderNo,
             'TileTypeId' => $this->attrs['tile_type_id'] ?? null,
-            'Scaffold' => $this->attrs['scaffold_required'] ?? null,
+            'Scaffold' => $this->attrs['scaffold_required'] ?? 0, // TODO: Populate
             'ExpiryDate' => Carbon::now()
         ]);
     }
@@ -322,10 +324,10 @@ class CustomerService
             'InvDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
             'InvoiceNo' => $this->company->LastCustInvoice,
-            'VATRateId' => optional($this->vatRate)->Id,
+            'VATRateId' => optional($this->vatRate)->Id, // TODO: Populate
             'AmountDue' => $this->attrs['contract_price'] ?? null,
-            'OrderId' => null,
-            'Description' => $this->attrs['order_description'] ?? null,
+            'OrderId' => optional($this->visit)->Id, // At Richard Gregory's request
+            'Description' => $this->attrs['order_description'] ?? null, // TODO: Populate
             'InvType' => $this->attrs['invoice_type'] ?? null,
             'Commissioned' => 1,
             'ActAmt' => $this->attrs['contract_price'] ?? null
@@ -338,8 +340,8 @@ class CustomerService
             throw new NoCustomerException();
         }
         
-        $processActions = ProcessTemplate::where('active', 1)
-            ->where('startup', 1)
+        $processActions = ProcessTemplate::where('Active', true)
+            ->where('Startup', 1)
             ->where('TemplateTypeId', $this->templateType->Id)
             ->get()
             ->map(function ($processTemplate) {
