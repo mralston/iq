@@ -15,6 +15,7 @@ use Mralston\Iq\Models\CustomerLog;
 use Mralston\Iq\Models\CustomerInvoice;
 use Mralston\Iq\Models\EnquirySource;
 use Mralston\Iq\Models\InstallNote;
+use Mralston\Iq\Models\PanelType;
 use Mralston\Iq\Models\ProcessTemplate;
 use Mralston\Iq\Models\ProcessAction;
 use Mralston\Iq\Models\SolarIrradianceZone;
@@ -39,6 +40,9 @@ class CustomerService
     protected ?EnquirySource $enquirySource = null;
     protected ?VatRate $vatRate = null;
     protected ?TemplateType $templateType = null;
+    protected ?PanelType $panelType = null;
+    protected ?TileType $tileType = null;
+    protected ?array $notes = [];
     
     protected ?Customer $customer = null;
     protected ?Visit $visit = null;
@@ -110,6 +114,24 @@ class CustomerService
         $this->customer = $customer;
         return $this;
     }
+    
+    public function withPanelType(?PanelType $panelType = null): self
+    {
+        $this->panelType = $panelType;
+        return $this;
+    }
+    
+    public function withTileType(?TileType $tileType = null): self
+    {
+        $this->tileType = $tileType;
+        return $this;
+    }
+    
+    public function withNotes(string $type, string $notes)
+    {
+        $this->notes[$type] = $notes;
+        return $this;
+    }
 
     public function create(): Customer
     {
@@ -133,40 +155,23 @@ class CustomerService
         });
     }
 
-    private function buildNotes(?string $quoteNotes = null, ?string $additionalNotes = null, ?string $batteryNotes = null, ?string $contractNotes = null): string
-    {
-        $compiledNotes = '***** ' .
+    private function buildNotes(): string {
+        return '***** ' .
             Carbon::now()->format('d/m/Y h:i A') .
             ' (Quote Notes) *****' .
-            "\r\n";
-
-        if (!empty($quoteNotes)) {
-            $compiledNotes .= $quoteNotes;
-        }
-
-        if (!empty($additionalNotes)) {
-            $compiledNotes .= ' ' . $additionalNotes;
-        }
-
-        if (!empty($batteryNotes)) {
-            $compiledNotes .= ' ' . $batteryNotes;
-        }
-
-        if (!empty($contractNotes)) {
-            $compiledNotes .= ' ' . $contractNotes;
-        }
-
-        return $compiledNotes;
+            "\r\n" .
+            collect($this->notes)->implode(' ');
     }
     
     private function createCustomer(): Customer
     {
         return $this->customer = Customer::create([
-            'Name' => collect([
-                $this->attrs['title'],
-                $this->attrs['first_name'],
-                $this->attrs['last_name']
-            ])->join(' '),
+            'Name' => $this->attrs['customer_name'] ??
+                collect([
+                    $this->attrs['title'],
+                    $this->attrs['first_name'],
+                    $this->attrs['last_name']
+                ])->join(' '),
             'Address' => $this->attrs['address'],
             'Postcode' => $this->attrs['post_code'],
             'Phone1' => $this->attrs['phone1'] ?? null,
@@ -187,12 +192,7 @@ class CustomerService
             'EnquirySourceID' => optional($this->enquirySource)->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim(),
             'BranchID' => optional($this->branch)->Id ?? optional($this->rep)->BranchId,
-            'Notes' => $this->buildNotes(
-                $this->attrs['quote_notes'] ?? null,
-                $this->attrs['additional_notes'] ?? null,
-                $this->attrs['battery_notes'] ?? null,
-                $this->attrs['contract_notes'] ?? null
-            ),
+            'Notes' => $this->buildNotes(),
             'OwnerId' => $this->rep->Id,
             'Cat1' => $this->attrs['category1'] ?? Constants::DEFAULT_CATEGORY,
             'Cat2' => $this->attrs['category2'] ?? Constants::DEFAULT_CATEGORY,
@@ -223,24 +223,24 @@ class CustomerService
             'CSI' => $this->attrs['csi'] ?? 0,
             'Sent' => $this->attrs['sent'] ?? 0,
             'WouldRefer' => $this->attrs['would_refer'] ?? 0,
-            'TileTypeId' => $this->attrs['tile_type_id'] ?? null, // TODO: Populate value
+            'TileTypeId' => optional($this->tileType)->Id,
             'ArchiveId' => 0,
-            'ExecutionDate' => $this->attrs['finance_execution_date'] ?? '1899-12-30', // TODO: Finance execution date
+            'ExecutionDate' => $this->attrs['finance_execution_date'] ?? '1899-12-30',
             'ReasonForCancel' => 0,
             'InProgress' => $this->attrs['in_progress'] ?? 0,
             'Remote' => $this->attrs['remote'] ?? 0,
             'RemoteUser' => $this->attrs['remote_user'] ?? 0,
-            'TemplateTypeId',
+            'TemplateTypeId' => optional($this->templateType)->Id,
             'DateLastViewed' => Carbon::now(),
-            'DateEPC' => '1899-12-30', // TODO: WTF?
+            'DateEPC' => $this->attrs['epc_date'] ?? '1899-12-30',
             'DateInstall' => $this->attrs['install_date'] ?? null,
             'ContractPrice' => $this->attrs['contract_price'] ?? 0,
             'Wireless' => $this->attrs['wireless'] ?? 1,
             'QuoteId' => $this->attrs['model_id'],
-            'quote_updated', // TODO: Populate value
+            'quote_updated' => $this->attrs['quote_updated'] ?? null,
             'ProjectStatus' => $this->attrs['project_status'] ?? 0,
-            'DateRebook' => $this->attrs['date_rebook'] ?? '1899-12-30', // TODO: WTF?
-            'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0, // TODO: Populate value
+            'DateRebook' => $this->attrs['rebook_date'] ?? '1899-12-30',
+            'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0,
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
         ]);
@@ -295,13 +295,13 @@ class CustomerService
             'CustomerId' => $this->customer->Id,
             'VisitDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
-            'NoPanels' => $this->attrs['panel_quantity'] ?? null, // TODO: Populate
-            'PanelTypeId' => $this->attrs['panel_type_id'] ?? null, // TODO: Populate
+            'NoPanels' => $this->attrs['panel_quantity'] ?? null,
+            'PanelTypeId' => optional($this->panelType)->id,
             'StatusId' => Constants::DEFAULT_VISIT_STATUS_ID,
-            'VatRateId' => optional($this->vatRate)->Id, // TODO: Populate
+            'VatRateId' => optional($this->vatRate)->Id,
             'DateSold' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
             'Reference' => 'AU/' . $this->company->LastOrderNo,
-            'TileTypeId' => $this->attrs['tile_type_id'] ?? null,
+            'TileTypeId' => optional($this->tileType)->Id,
             'Scaffold' => $this->attrs['scaffold_required'] ?? 0, // TODO: Populate
             'ExpiryDate' => Carbon::now()
         ]);
@@ -324,10 +324,10 @@ class CustomerService
             'InvDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
             'InvoiceNo' => $this->company->LastCustInvoice,
-            'VATRateId' => optional($this->vatRate)->Id, // TODO: Populate
+            'VATRateId' => optional($this->vatRate)->Id,
             'AmountDue' => $this->attrs['contract_price'] ?? null,
             'OrderId' => optional($this->visit)->Id, // At Richard Gregory's request
-            'Description' => $this->attrs['order_description'] ?? null, // TODO: Populate
+            'Description' => $this->attrs['order_description'] ?? null,
             'InvType' => $this->attrs['invoice_type'] ?? null,
             'Commissioned' => 1,
             'ActAmt' => $this->attrs['contract_price'] ?? null
