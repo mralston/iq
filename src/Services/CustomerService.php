@@ -345,7 +345,7 @@ class CustomerService
             ->map(function ($processTemplate) {
                 return ProcessAction::create([
                     'CustomerId' => $this->customer->Id,
-                    'ProcessId' => $processTemplatee->Id,
+                    'ProcessId' => $processTemplate->Id,
                     'Description' => $processTemplate->Description,
                     'DateDue' => Carbon::today()->addDays($processTemplate->ElapseDays),
                     'DateChecked' => '1899-12-30',
@@ -355,7 +355,28 @@ class CustomerService
                 ]);
             });
             
-        // TODO: execute complete_Process on the startup process
+        // Fetch the startup process template
+        $startupProcessTemplate = ProcessTemplate::where('TemplateTypeId', $this->templateType->Id)
+            ->where('Active', true)
+            ->where('Startup', 1)
+            ->first();
+            
+        // Fetch the process action matching that startup process template
+        if (!empty($startupProcessTemplate)) {
+            $startupProcessAction = $this->customer
+                ->processActions()
+                ->firstWhere('ProcessId', $startupProcessTemplate->Id);
+        }
+            
+        // If there was a startup process action for the customer, Execute complete_Process stored procedure
+        if (!empty($startupProcessAction)) {
+            DB::connection('iq')
+                ->statement('EXEC complete_Process ?, ?, ?', [
+                    $startupProcessTemplate->Id,
+                    $this->customer->Id,
+                    config('iq.auto_user')
+                ]);
+        }
             
         return $processActions;
     }

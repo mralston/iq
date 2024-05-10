@@ -3,6 +3,7 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
@@ -86,4 +87,9 @@ class Customer extends Model
         'SweepmanId',
         'AppointmentId',
     ];
+    
+    public function processActions(): HasMany
+    {
+        return $this->hasMany(ProcessAction::class, 'CustomerId');
+    }
 }
