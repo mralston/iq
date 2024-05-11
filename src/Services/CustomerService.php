@@ -127,8 +127,13 @@ class CustomerService
         return $this;
     }
     
-    public function withNotes(string $type, string $notes)
+    public function withNotes(string $type, ?string $notes = null)
     {
+        if (empty($notes)) {
+            unset($this->notes[$type]);
+            return $this;
+        }
+        
         $this->notes[$type] = $notes;
         return $this;
     }
@@ -269,7 +274,7 @@ class CustomerService
         
         return CustomerLog::create([
             'CustomerId' => $this->customer->Id,
-            'Name' => collect([
+            'Name' => $this->attrs['customer_name'] ?? collect([
                 $this->attrs['title'],
                 $this->attrs['first_name'],
                 $this->attrs['last_name']
