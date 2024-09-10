@@ -11,7 +11,7 @@ class SolarIrradianceZone extends Model
     protected $primaryKey = 'Id';
 
     public $timestamps = false;
-    
+
     public static function byCode($code)
     {
         return static::firstWhere('ZoneId', $code);

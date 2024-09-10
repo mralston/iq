@@ -10,10 +10,10 @@ class Customer extends Model
     protected $connection = 'iq';
     protected $table = 'tCustomers';
     protected $primaryKey = 'Id';
-    
+
     const CREATED_AT = 'Created';
     const UPDATED_AT = 'Updated';
-    
+
     protected $fillable = [
         'Name',
         'Address',
@@ -87,7 +87,7 @@ class Customer extends Model
         'SweepmanId',
         'AppointmentId',
     ];
-    
+
     public function processActions(): HasMany
     {
         return $this->hasMany(ProcessAction::class, 'CustomerId');

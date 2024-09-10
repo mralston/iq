@@ -17,7 +17,7 @@ class IqServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/config.php', 'iq');
-        
+
         $this->app->bind(CustomerService::class, function () {
             return new CustomerService();
         });
@@ -35,7 +35,7 @@ class IqServiceProvider extends ServiceProvider
                 __DIR__ . '/../../config/config.php' => config_path('iq.php'),
             ], 'pdf-config');
         }
-        
+
         Customer::observe(CustomerObserver::class);
     }
 }

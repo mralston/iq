@@ -12,7 +12,7 @@ class User extends Model
 
     const CREATED_AT = 'Created';
     const UPDATED_AT = 'Updated';
-    
+
     protected function branch()
     {
         return $this->belongsTo(Branch::class);

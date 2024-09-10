@@ -19,13 +19,13 @@ use Mralston\Iq\Services\CustomerService;
  */
 class Customer extends Facade
 {
-	/**
-	 * Get the registered name of the component.
-	 *
-	 * @return string
-	 */
-	protected static function getFacadeAccessor()
-	{
-		return CustomerService::class;
-	}
+    /**
+     * Get the registered name of the component.
+     *
+     * @return string
+     */
+    protected static function getFacadeAccessor()
+    {
+        return CustomerService::class;
+    }
 }

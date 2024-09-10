@@ -9,7 +9,7 @@ class ProcessError extends Model
     protected $connection = 'iq';
     protected $table = 'Process_Errors';
     protected $primaryKey = 'ErrorID';
-    
+
     const UPDATED_AT = null;
 
     protected $fillable = [
@@ -20,5 +20,4 @@ class ProcessError extends Model
         'ErrorLine',
         'ErrorMessage',
     ];
-
 }

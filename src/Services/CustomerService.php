@@ -120,20 +120,20 @@ class CustomerService
         $this->panelType = $panelType;
         return $this;
     }
-    
+
     public function withTileType(?TileType $tileType = null): self
     {
         $this->tileType = $tileType;
         return $this;
     }
-    
+
     public function withNotes(string $type, ?string $notes = null)
     {
         if (empty($notes)) {
             unset($this->notes[$type]);
             return $this;
         }
-        
+
         $this->notes[$type] = $notes;
         return $this;
     }
@@ -143,61 +143,62 @@ class CustomerService
         return DB::transaction(function () {
 
             $customer = $this->createCustomer();
-            
-            $this->createInstallNote();
 
+            $this->createInstallNote();
             $this->createCustomerLog();
-            
             $this->visit = $this->createVisit();
-            
             $this->createCustomerInvoice();
-            
             $this->createProcessActions();
-                
             // TODO: Create additional ProcessAction for EV charger??? TBC
 
             return $customer;
         });
     }
 
-    private function buildNotes(): string {
+    private function buildNotes(): string
+    {
         return '***** ' .
             Carbon::now()->format('d/m/Y h:i A') .
             ' (Quote Notes) *****' .
             "\r\n" .
             collect($this->notes)->implode(' ');
     }
-    
+
     private function createCustomer(): Customer
     {
-        return $this->customer = Customer::create([
-            'Name' => $this->attrs['customer_name'] ??
-                collect([
-                    $this->attrs['title'],
-                    $this->attrs['first_name'],
-                    $this->attrs['last_name']
-                ])->join(' '),
+        $fullName = collect([
+            $this->attrs['title'],
+            $this->attrs['first_name'],
+            $this->attrs['last_name']
+        ])->join(' ');
+
+        $salutation = collect([
+            $this->attrs['title'],
+            $this->attrs['last_name']
+        ])->join(' ');
+
+        $now = Carbon::now();
+
+        $customerData = [
+            'Name' => $this->attrs['customer_name'] ?? $fullName,
             'Address' => $this->attrs['address'],
             'Postcode' => $this->attrs['post_code'],
             'Phone1' => $this->attrs['phone1'] ?? null,
             'Phone2' => $this->attrs['phone2'] ?? null,
             'Phone3' => $this->attrs['phone3'] ?? null,
-            'Salutation' => $this->attrs['salutation'] ?? collect([
-                $this->attrs['title'],
-                $this->attrs['last_name']
-            ])->join(' '),
+            'Salutation' => $this->attrs['salutation'] ?? $salutation,
             'Email' => $this->attrs['email'],
             'TypeId' => $this->attrs['type_id'] ?? Constants::DEFAULT_TYPE_ID,
-            'InitialDate' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
-            'LastDate' => $this->attrs['last_date'] ?? Carbon::now(),
-            'NextDate' => $this->attrs['next_date'] ?? Carbon::now(),
+            'InitialDate' => $this->attrs['contract_signed_at'] ?? $now,
+            'LastDate' => $this->attrs['last_date'] ?? $now,
+            'NextDate' => $this->attrs['next_date'] ?? $now,
             'StatusID' => optional($this->status)->Id ?? Constants::DEFAULT_CUSTOMER_STATUS_ID,
             'IndTypeID' => $this->attrs['ind_type_id'] ?? Constants::DEFAULT_INDIVIDUAL_TYPE,
             'CustType' => $this->attrs['customer_type'] ?? Constants::DEFAULT_CUSTOMER_TYPE,
             'EnquirySourceID' => optional($this->enquirySource)->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim(),
             'BranchID' => optional($this->branch)->Id ?? optional($this->rep)->BranchId,
-            'Notes' => $this->buildNotes(),
+            'Notes' => $this->buildNotes(), // Assuming this is another method in your class
             'OwnerId' => $this->rep->Id,
             'Cat1' => $this->attrs['category1'] ?? Constants::DEFAULT_CATEGORY,
             'Cat2' => $this->attrs['category2'] ?? Constants::DEFAULT_CATEGORY,
@@ -236,7 +237,7 @@ class CustomerService
             'Remote' => $this->attrs['remote'] ?? 0,
             'RemoteUser' => $this->attrs['remote_user'] ?? 0,
             'TemplateTypeId' => optional($this->templateType)->Id,
-            'DateLastViewed' => Carbon::now(),
+            'DateLastViewed' => $now,
             'DateEPC' => $this->attrs['epc_date'] ?? '1899-12-30',
             'DateInstall' => $this->attrs['install_date'] ?? null,
             'ContractPrice' => $this->attrs['contract_price'] ?? 0,
@@ -248,15 +249,17 @@ class CustomerService
             'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0,
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
-        ]);
+        ];
+
+        return $this->customer = Customer::create($customerData);
     }
-    
+
     public function createInstallNote(): InstallNote
     {
         if (empty($this->customer)) {
             throw new NoCustomerException();
         }
-        
+
         return InstallNote::create([
             'CustomerId' => $this->customer->Id,
             'UserId' => optional($this->rep)->Id,
@@ -265,13 +268,13 @@ class CustomerService
             'StatusId' => 0
         ]);
     }
-    
+
     public function createCustomerLog(): CustomerLog
     {
         if (empty($this->customer)) {
             throw new NoCustomerException();
         }
-        
+
         return CustomerLog::create([
             'CustomerId' => $this->customer->Id,
             'Name' => $this->attrs['customer_name'] ?? collect([
@@ -283,18 +286,18 @@ class CustomerService
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim()
         ]);
     }
-    
+
     public function createVisit(): Visit
     {
         if (empty($this->customer)) {
             throw new NoCustomerException();
         }
-        
+
         // Increment LastOrderNo on company
         $this->company->update([
             $this->company->LastOrderNo = $this->company->LastOrderNo + 1
         ]);
-        
+
         // Create Visit
         return Visit::create([
             'CustomerId' => $this->customer->Id,
@@ -311,18 +314,18 @@ class CustomerService
             'ExpiryDate' => Carbon::now()
         ]);
     }
-    
+
     public function createCustomerInvoice(): CustomerInvoice
     {
         if (empty($this->customer)) {
             throw new NoCustomerException();
         }
-        
+
         // Increment LastCustInvoice on company
         $this->company->update([
             $this->company->LastCustInvoice = $this->company->LastCustInvoice + 1
         ]);
-        
+
         // Create CustomerInvoice
         return CustomerInvoice::create([
             'CustomerId' => $this->customer->Id,
@@ -338,13 +341,13 @@ class CustomerService
             'ActAmt' => $this->attrs['contract_price'] ?? null
         ]);
     }
-    
+
     public function createProcessActions(): Collection
     {
         if (empty($this->customer)) {
             throw new NoCustomerException();
         }
-        
+
         $processActions = ProcessTemplate::where('Active', true)
             ->where('Startup', 1)
             ->where('TemplateTypeId', $this->templateType->Id)
@@ -361,20 +364,20 @@ class CustomerService
                     'DecOrProc' => $processTemplate->DecOrProc
                 ]);
             });
-            
+
         // Fetch the startup process template
         $startupProcessTemplate = ProcessTemplate::where('TemplateTypeId', $this->templateType->Id)
             ->where('Active', true)
             ->where('Startup', 1)
             ->first();
-            
+
         // Fetch the process action matching that startup process template
         if (!empty($startupProcessTemplate)) {
             $startupProcessAction = $this->customer
                 ->processActions()
                 ->firstWhere('ProcessId', $startupProcessTemplate->Id);
         }
-            
+
         // If there was a startup process action for the customer, Execute complete_Process stored procedure
         if (!empty($startupProcessAction)) {
             DB::connection('iq')
@@ -384,7 +387,7 @@ class CustomerService
                     config('iq.auto_user')
                 ]);
         }
-            
+
         return $processActions;
     }
 }

@@ -9,9 +9,9 @@ class Visit extends Model
     protected $connection = 'iq';
     protected $table = 'tVisits';
     protected $primaryKey = 'Id';
-    
+
     public $timestamps = false;
-    
+
     protected $fillable = [
         'CustomerId',
         'VisitDate',
@@ -25,5 +25,4 @@ class Visit extends Model
         'Scaffold',
         'ExpiryDate',
     ];
-
 }

@@ -9,10 +9,10 @@ class ProcessAction extends Model
     protected $connection = 'iq';
     protected $table = 'tProcessActions';
     protected $primaryKey = 'Id';
-    
+
     const CREATED_AT = 'DateCreated';
     const UPDATED_AT = null;
-    
+
     protected $fillable = [
         'CustomerId',
         'ProcessId',
@@ -23,5 +23,4 @@ class ProcessAction extends Model
         'BranchId',
         'DecOrProc',
     ];
-
 }

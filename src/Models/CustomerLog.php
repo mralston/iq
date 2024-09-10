@@ -9,9 +9,9 @@ class CustomerLog extends Model
     protected $connection = 'iq';
     protected $table = 'tCustLog';
     protected $primaryKey = 'Id';
-    
+
     public $timestamps = false;
-    
+
     protected $fillable = [
         'CustomerId',
         'Name',

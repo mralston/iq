@@ -9,6 +9,6 @@ class ProcessTemplate extends Model
     protected $connection = 'iq';
     protected $table = 'tProcessTemplate';
     protected $primaryKey = 'Id';
-    
+
     public $timestamps = false;
 }

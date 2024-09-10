@@ -21,5 +21,4 @@ class Constants
     public const DEFAULT_DAYLIGHT_USAGE = 50;
     public const DEFAULT_VAT_EXEMPT = 0;
     public const HEAD_OFFICE_BRANCH_ID = 568;
-
 }
