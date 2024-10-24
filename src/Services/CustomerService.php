@@ -168,15 +168,19 @@ class CustomerService
     private function createCustomer(): Customer
     {
         $fullName = collect([
-            $this->attrs['title'],
-            $this->attrs['first_name'],
-            $this->attrs['last_name']
-        ])->join(' ');
+            $this->attrs['title'] ?? null,
+            $this->attrs['first_name'] ?? null,
+            $this->attrs['last_name'] ?? null
+        ])
+            ->reject(fn ($value) => empty($value))
+            ->join(' ');
 
         $salutation = collect([
-            $this->attrs['title'],
-            $this->attrs['last_name']
-        ])->join(' ');
+            $this->attrs['title'] ?? null,
+            $this->attrs['last_name'] ?? null
+        ])
+            ->reject(fn ($value) => empty($value))
+            ->join(' ');
 
         $now = Carbon::now();
 
@@ -193,12 +197,12 @@ class CustomerService
             'InitialDate' => $this->attrs['contract_signed_at'] ?? $now,
             'LastDate' => $this->attrs['last_date'] ?? $now,
             'NextDate' => $this->attrs['next_date'] ?? $now,
-            'StatusID' => optional($this->status)->Id ?? Constants::DEFAULT_CUSTOMER_STATUS_ID,
+            'StatusID' => $this->status?->Id ?? Constants::DEFAULT_CUSTOMER_STATUS_ID,
             'IndTypeID' => $this->attrs['ind_type_id'] ?? Constants::DEFAULT_INDIVIDUAL_TYPE,
             'CustType' => $this->attrs['customer_type'] ?? Constants::DEFAULT_CUSTOMER_TYPE,
-            'EnquirySourceID' => optional($this->enquirySource)->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
+            'EnquirySourceID' => $this->enquirySource?->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim(),
-            'BranchID' => optional($this->branch)->Id ?? optional($this->rep)->BranchId,
+            'BranchID' => $this->branch?->Id ?? $this->rep?->BranchId,
             'Notes' => $this->buildNotes(),
             'OwnerId' => $this->rep->Id,
             'Cat1' => $this->attrs['category1'] ?? Constants::DEFAULT_CATEGORY,
@@ -206,7 +210,7 @@ class CustomerService
             'Cat3' => $this->attrs['category3'] ?? Constants::DEFAULT_CATEGORY,
             'Cat4' => $this->attrs['category4'] ?? Constants::DEFAULT_CATEGORY,
             'Cat5' => $this->attrs['category5'] ?? Constants::DEFAULT_CATEGORY,
-            'Companyid' => optional($this->company)->Id,
+            'Companyid' => $this->company?->Id,
             'IndustryTypeId' => $this->attrs['industry_type_id'] ?? Constants::DEFAULT_INDUSTRY_TYPE,
             'EnquiryType' => $this->attrs['enquiry_type'] ?? Constants::DEFAULT_ENQUIRY_TYPE,
             'ImportId' => $this->attrs['model_id'],
@@ -214,9 +218,9 @@ class CustomerService
             'LastUser' => config('iq.auto_user'),
             'PricePerKWH' => Constants::DEFAULT_PRICE_PER_KWH,
             'AnnualBill' => $this->attrs['annual_bill'],
-            'TariffId' => optional($this->tariff)->Id ?? Constants::DEFAULT_TARIFF_ID,
+            'TariffId' => $this->tariff?->Id ?? Constants::DEFAULT_TARIFF_ID,
             'DaylightUsage' => $this->attrs['daylight_usage'] ?? Constants::DEFAULT_DAYLIGHT_USAGE,
-            'SolarInputFactor' => optional($this->solarIrradianceZone)->SolarRadiationValue,
+            'SolarInputFactor' => $this->solarIrradianceZone?->SolarRadiationValue,
             'VATExempt' => $this->attrs['vat_exempt'] ?? Constants::DEFAULT_VAT_EXEMPT,
             'Sold' => $this->attrs['sold'] ?? 0,
             'NoReport' => $this->attrs['no_report'] ?? 0,
@@ -230,14 +234,14 @@ class CustomerService
             'CSI' => $this->attrs['csi'] ?? 0,
             'Sent' => $this->attrs['sent'] ?? 0,
             'WouldRefer' => $this->attrs['would_refer'] ?? 0,
-            'TileTypeId' => optional($this->tileType)->Id,
+            'TileTypeId' => $this->tileType?->Id,
             'ArchiveId' => 0,
             'ExecutionDate' => $this->attrs['finance_execution_date'] ?? '1899-12-30',
             'ReasonForCancel' => 0,
             'InProgress' => $this->attrs['in_progress'] ?? 0,
             'Remote' => $this->attrs['remote'] ?? 0,
             'RemoteUser' => $this->attrs['remote_user'] ?? 0,
-            'TemplateTypeId' => optional($this->templateType)->Id,
+            'TemplateTypeId' => $this->templateType?->Id,
             'DateLastViewed' => $now,
             'DateEPC' => $this->attrs['epc_date'] ?? '1899-12-30',
             'DateInstall' => $this->attrs['install_date'] ?? null,
@@ -263,7 +267,7 @@ class CustomerService
 
         return InstallNote::create([
             'CustomerId' => $this->customer->Id,
-            'UserId' => optional($this->rep)->Id,
+            'UserId' => $this->rep?->Id,
             'DateNote' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
             'Notes' => 'New Install',
             'StatusId' => 0
@@ -305,12 +309,12 @@ class CustomerService
             'VisitDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
             'NoPanels' => $this->attrs['panel_quantity'] ?? null,
-            'PanelTypeId' => optional($this->panelType)->id,
+            'PanelTypeId' => $this->panelType?->id,
             'StatusId' => Constants::DEFAULT_VISIT_STATUS_ID,
-            'VatRateId' => optional($this->vatRate)->Id,
+            'VatRateId' => $this->vatRate?->Id,
             'DateSold' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
             'Reference' => 'AU/' . $this->company->LastOrderNo,
-            'TileTypeId' => optional($this->tileType)->Id,
+            'TileTypeId' => $this->tileType?->Id,
             'Scaffold' => $this->attrs['scaffold_required'] ?? 0, // TODO: Populate
             'ExpiryDate' => Carbon::now()
         ]);
@@ -333,9 +337,9 @@ class CustomerService
             'InvDate' => Carbon::now(),
             'UserId' => config('iq.auto_user'),
             'InvoiceNo' => $this->company->LastCustInvoice,
-            'VATRateId' => optional($this->vatRate)->Id,
+            'VATRateId' => $this->vatRate?->Id,
             'AmountDue' => $this->attrs['contract_price'] ?? null,
-            'OrderId' => optional($this->visit)->Id, // At Richard Gregory's request
+            'OrderId' => $this->visit?->Id, // At Richard Gregory's request
             'Description' => $this->attrs['order_description'] ?? null,
             'InvType' => $this->attrs['invoice_type'] ?? null,
             'Commissioned' => 1,
