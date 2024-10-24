@@ -22,6 +22,7 @@ use Mralston\Iq\Models\SolarIrradianceZone;
 use Mralston\Iq\Models\Status;
 use Mralston\Iq\Models\Tariff;
 use Mralston\Iq\Models\TemplateType;
+use Mralston\Iq\Models\TileType;
 use Mralston\Iq\Models\User;
 use Mralston\Iq\Models\VatRate;
 use Mralston\Iq\Models\Visit;
@@ -198,7 +199,7 @@ class CustomerService
             'EnquirySourceID' => optional($this->enquirySource)->Id ?? Constants::DEFAULT_ENQUIRY_SOURCE,
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim(),
             'BranchID' => optional($this->branch)->Id ?? optional($this->rep)->BranchId,
-            'Notes' => $this->buildNotes(), // Assuming this is another method in your class
+            'Notes' => $this->buildNotes(),
             'OwnerId' => $this->rep->Id,
             'Cat1' => $this->attrs['category1'] ?? Constants::DEFAULT_CATEGORY,
             'Cat2' => $this->attrs['category2'] ?? Constants::DEFAULT_CATEGORY,
