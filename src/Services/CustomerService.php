@@ -220,7 +220,9 @@ class CustomerService
             'AnnualBill' => $this->attrs['annual_bill'],
             'TariffId' => $this->tariff?->Id ?? Constants::DEFAULT_TARIFF_ID,
             'DaylightUsage' => $this->attrs['daylight_usage'] ?? Constants::DEFAULT_DAYLIGHT_USAGE,
-            'SolarInputFactor' => $this->solarIrradianceZone?->SolarRadiationValue,
+            'SolarInputFactor' => !is_null($this->solarIrradianceZone?->SolarRadiationValue) ?
+                intval($this->solarIrradianceZone->SolarRadiationValue) :
+                null,
             'VATExempt' => $this->attrs['vat_exempt'] ?? Constants::DEFAULT_VAT_EXEMPT,
             'Sold' => $this->attrs['sold'] ?? 0,
             'NoReport' => $this->attrs['no_report'] ?? 0,
