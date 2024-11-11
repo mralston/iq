@@ -1,10 +1,10 @@
 <?php
 
-namespace Mralston\Iq\Exceptions\NoCustomerException;
+namespace Mralston\Iq\Exceptions;
 
 use \Exception;
 
 class NoCustomerException extends Exception
 {
-    protected string $message = 'Customer record must be created or provided first.';
+    protected $message = 'Customer record must be created or provided first.';
 }
