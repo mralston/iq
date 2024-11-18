@@ -27,9 +27,6 @@ use Mralston\Iq\Models\User;
 use Mralston\Iq\Models\VatRate;
 use Mralston\Iq\Models\Visit;
 
-/**
- * NOT powered by MarcuSQL™
- */
 class CustomerService
 {
     protected ?array $attrs = [];
