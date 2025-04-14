@@ -413,7 +413,7 @@ class CustomerService
             'QuoteID' => $this->attrs['model_id'],
             'MpanNumber' => $this->attrs['mpan_number'] ?? null,
             'ExportTariff' => $this->attrs['export_tariff'] ?? null,
-            'FeedInTariff' => $this->attrs['feed_in_tariff'] ?? null
+            'FeedInTariff' => $this->attrs['feed_in_tariff'] ?? null,
         ]);
     }
 }
