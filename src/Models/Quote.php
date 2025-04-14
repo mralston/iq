@@ -20,4 +20,9 @@ class Quote extends Model
         'ExportTariff',
         'FeedInTariff',
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'CustomerID', 'Id');
+    }
 }
