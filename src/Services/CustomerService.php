@@ -149,6 +149,7 @@ class CustomerService
             $this->visit = $this->createVisit();
             $this->createCustomerInvoice();
             $this->createProcessActions();
+            $this->createQuote();
             // TODO: Create additional ProcessAction for EV charger??? TBC
 
             return $customer;
