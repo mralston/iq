@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Mralston\Iq\Enums\Constants;
 use Mralston\Iq\Exceptions\NoCustomerException;
+use Mralston\Iq\Exceptions\NoQuoteException;
 use Mralston\Iq\Models\Branch;
 use Mralston\Iq\Models\Company;
 use Mralston\Iq\Models\Customer;
@@ -26,6 +27,7 @@ use Mralston\Iq\Models\TileType;
 use Mralston\Iq\Models\User;
 use Mralston\Iq\Models\VatRate;
 use Mralston\Iq\Models\Visit;
+use Mralston\Iq\Models\Quote;
 
 class CustomerService
 {
@@ -147,6 +149,7 @@ class CustomerService
             $this->visit = $this->createVisit();
             $this->createCustomerInvoice();
             $this->createProcessActions();
+            $this->createQuote();
             // TODO: Create additional ProcessAction for EV charger??? TBC
 
             return $customer;
@@ -393,5 +396,24 @@ class CustomerService
         }
 
         return $processActions;
+    }
+
+    public function createQuote(): Quote
+    {
+        if (empty($this->customer)) {
+            throw new NoCustomerException();
+        }
+
+        if (empty($this->attrs['model_id'])) {
+            throw new NoQuoteException();
+        }
+
+        return Quote::create([
+            'CustomerID' => $this->customer->Id,
+            'QuoteID' => $this->attrs['model_id'],
+            'MpanNumber' => $this->attrs['mpan_number'] ?? null,
+            'ExportTariff' => $this->attrs['export_tariff'] ?? null,
+            'FeedInTariff' => $this->attrs['feed_in_tariff'] ?? null,
+        ]);
     }
 }
