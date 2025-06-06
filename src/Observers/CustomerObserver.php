@@ -90,7 +90,22 @@ class CustomerObserver
         return $postCode . '_' .
             Str::of($surname)
                 ->upper()
-                ->replace([' ', "\r", "\n", "\t", "'"], '')
+                ->replace([
+                    ' ',
+                    "\r",
+                    "\n",
+                    "\t",
+                    "'",
+                    '<',
+                    '>',
+                    ':',
+                    '"',
+                    '/',
+                    '\\',
+                    '|',
+                    '?',
+                    '*'
+                ], '')
                 ->substr(0, 3) . '_' . $customerId;
     }
 
