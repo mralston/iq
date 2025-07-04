@@ -33,7 +33,7 @@ class IqServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../../config/config.php' => config_path('iq.php'),
-            ], 'pdf-config');
+            ], 'iq-config');
         }
 
         Customer::observe(CustomerObserver::class);
