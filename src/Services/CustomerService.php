@@ -386,14 +386,14 @@ class CustomerService
         }
 
         // If there was a startup process action for the customer, Execute complete_Process stored procedure
-        if (!empty($startupProcessAction)) {
-            DB::connection('iq')
-                ->statement('EXEC complete_Process ?, ?, ?', [
-                    $startupProcessTemplate->Id,
-                    $this->customer->Id,
-                    config('iq.auto_user')
-                ]);
-        }
+        // if (!empty($startupProcessAction)) {
+        //     DB::connection('iq')
+        //         ->statement('EXEC complete_Process ?, ?, ?', [
+        //             $startupProcessTemplate->Id,
+        //             $this->customer->Id,
+        //             config('iq.auto_user')
+        //         ]);
+        // }
 
         return $processActions;
     }
