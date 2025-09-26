@@ -19,6 +19,7 @@ use Mralston\Iq\Models\InstallNote;
 use Mralston\Iq\Models\PanelType;
 use Mralston\Iq\Models\ProcessTemplate;
 use Mralston\Iq\Models\ProcessAction;
+use Mralston\Iq\Models\ServicePackage;
 use Mralston\Iq\Models\SolarIrradianceZone;
 use Mralston\Iq\Models\Status;
 use Mralston\Iq\Models\Tariff;
@@ -42,49 +43,50 @@ class CustomerService
     protected ?TemplateType $templateType = null;
     protected ?PanelType $panelType = null;
     protected ?TileType $tileType = null;
+    protected ?ServicePackage $servicePackage = null;
     protected ?array $notes = [];
-    
+
     protected ?Customer $customer = null;
     protected ?Visit $visit = null;
-    
+
     public function withAttrs(?array $attrs = []): self
     {
         // TODO: Validate $attrs
-        
+
         $this->attrs = $attrs;
         return $this;
     }
-    
+
     public function withBranch(?Branch $branch = null): self
     {
         $this->branch = $branch;
         return $this;
     }
-    
+
     public function withCompany(?Company $company = null): self
     {
         $this->company = $company;
         return $this;
     }
-    
+
     public function withEnquirySource(?EnquirySource $enquirySource = null): self
     {
         $this->enquirySource = $enquirySource;
         return $this;
     }
-    
+
     public function withRep(?User $rep = null): self
     {
         $this->rep = $rep;
         return $this;
     }
-    
+
     public function withSolarIrradianceZone(?SolarIrradianceZone $solarIrradianceZone = null): self
     {
         $this->solarIrradianceZone = $solarIrradianceZone;
         return $this;
     }
-    
+
     public function withStatus(?Status $status = null): self
     {
         $this->status = $status;
@@ -96,25 +98,25 @@ class CustomerService
         $this->tariff = $tariff;
         return $this;
     }
-    
+
     public function withVatRate(?VatRate $vatRate = null): self
     {
         $this->vatRate = $vatRate;
         return $this;
     }
-    
+
     public function withTemplateType(?TemplateType $templateType = null): self
     {
         $this->templateType = $templateType;
         return $this;
     }
-    
+
     public function withCustomer(?Customer $customer = null): self
     {
         $this->customer = $customer;
         return $this;
     }
-    
+
     public function withPanelType(?PanelType $panelType = null): self
     {
         $this->panelType = $panelType;
@@ -124,6 +126,12 @@ class CustomerService
     public function withTileType(?TileType $tileType = null): self
     {
         $this->tileType = $tileType;
+        return $this;
+    }
+
+    public function withServicePackage(?ServicePackage $servicePackage = null): self
+    {
+        $this->servicePackage = $servicePackage;
         return $this;
     }
 
@@ -256,6 +264,7 @@ class CustomerService
             'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0,
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
+            'SvcPackId' => $this->servicePackage?->id,
         ];
 
         return $this->customer = Customer::create($customerData);
