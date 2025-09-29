@@ -264,7 +264,7 @@ class CustomerService
             'EVCharger' => $this->attrs['evcharger_quantity'] ?? 0,
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
-            'SvcPackId' => $this->servicePackage?->id,
+            'SvcPackId' => $this->servicePackage?->Id,
         ];
 
         return $this->customer = Customer::create($customerData);
