@@ -86,6 +86,7 @@ class Customer extends Model
         'EVCharger',
         'SweepmanId',
         'AppointmentId',
+        'SvcPackId',
     ];
 
     public function processActions(): HasMany
