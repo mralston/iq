@@ -25,6 +25,11 @@ class ProcessAction extends Model
         'DecOrProc',
     ];
 
+    protected $casts = [
+        'DateDue' => 'datetime',
+        'DateChecked' => 'datetime',
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'CustomerId', 'Id');
