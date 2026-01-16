@@ -37,6 +37,6 @@ Please [e-mail security vulnerabilities directly to me](mailto:matt@mralston.co.
 
 ## Licence
 
-PDF is open-sourced software licenced under the [MIT license](LICENSE.md).
+Package is open-sourced software licenced under the [MIT license](LICENSE.md).
 
 IQ Solar is produced by and remains copyright of [Lewis John Limited](https://www.lewis-john.co.uk/).  
