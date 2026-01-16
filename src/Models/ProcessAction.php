@@ -3,6 +3,7 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProcessAction extends Model
 {
@@ -23,4 +24,14 @@ class ProcessAction extends Model
         'BranchId',
         'DecOrProc',
     ];
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'CustomerId', 'Id');
+    }
+
+    public function processTemplate()
+    {
+        return $this->belongsTo(ProcessTemplate::class, 'ProcessId', 'Id');
+    }
 }

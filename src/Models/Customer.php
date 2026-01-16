@@ -87,6 +87,7 @@ class Customer extends Model
         'SweepmanId',
         'AppointmentId',
         'SvcPackId',
+        'CustGuid',
     ];
 
     public function processActions(): HasMany

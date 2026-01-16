@@ -265,6 +265,7 @@ class CustomerService
             'SweepmanId' => $this->attrs['sweep_man_id'] ?? 0,
             'AppointmentId' => $this->attrs['appointment_id'] ?? null,
             'SvcPackId' => $this->servicePackage?->Id,
+            'CustGuid' => $this->attrs['cust_guid'] ?? null,
         ];
 
         return $this->customer = Customer::create($customerData);
