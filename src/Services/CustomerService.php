@@ -419,8 +419,8 @@ class CustomerService
         }
 
         return Quote::create([
-            'CustomerID' => $this->customer->Id,
-            'QuoteID' => $this->attrs['model_id'],
+            'CustomerId' => $this->customer->Id,
+            'QuoteId' => $this->attrs['model_id'],
             'MpanNumber' => $this->attrs['mpan_number'] ?? null,
             'ExportTariff' => $this->attrs['export_tariff'] ?? null,
             'FeedInTariff' => $this->attrs['feed_in_tariff'] ?? null,

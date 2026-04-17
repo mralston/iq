@@ -14,8 +14,8 @@ class Quote extends Model
     const UPDATED_AT = 'UpdatedAt';
 
     protected $fillable = [
-        'CustomerID',
-        'QuoteID',
+        'CustomerId',
+        'QuoteId',
         'MpanNumber',
         'ExportTariff',
         'FeedInTariff',
@@ -23,6 +23,6 @@ class Quote extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'CustomerID', 'Id');
+        return $this->belongsTo(Customer::class, 'CustomerId', 'Id');
     }
 }
