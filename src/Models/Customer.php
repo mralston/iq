@@ -94,4 +94,9 @@ class Customer extends Model
     {
         return $this->hasMany(ProcessAction::class, 'CustomerId');
     }
+
+    public function installDays(): HasMany
+    {
+        return $this->hasMany(InstallDay::class, 'CustomerId');
+    }
 }
