@@ -321,3 +321,29 @@ it('writes the same rows without strict mode, as the portal runs it', function (
         ->and($iq->table('tCustomerInvoice')->value('InvoiceNo'))->toBe(501)
         ->and($iq->table('tQuotes')->where('CustomerId', $customer->Id)->value('QuoteId'))->toBe(1701);
 });
+
+it('stamps Eloquent timestamps in iq.timezone when it is set', function () {
+    config(['app.timezone' => 'UTC', 'iq.timezone' => 'Europe/London']);
+
+    service(seedIq())->withAttrs(portalAttrs())->create();
+
+    $iq = DB::connection('iq');
+    expect($iq->table('tCustomers')->value('Created'))->toBe('2026-07-15 10:30:00')
+        ->and($iq->table('tCustomers')->value('Updated'))->toBe('2026-07-15 10:30:00')
+        ->and($iq->table('tProcessActions')->value('DateCreated'))->toBe('2026-07-15 10:30:00')
+        ->and($iq->table('tQuotes')->value('CreatedAt'))->toBe('2026-07-15 10:30:00')
+        ->and($iq->table('tQuotes')->value('UpdatedAt'))->toBe('2026-07-15 10:30:00');
+});
+
+it('stamps Eloquent timestamps in the application timezone when iq.timezone is not set', function () {
+    config(['app.timezone' => 'UTC', 'iq.timezone' => null]);
+
+    service(seedIq())->withAttrs(portalAttrs())->create();
+
+    $iq = DB::connection('iq');
+    expect($iq->table('tCustomers')->value('Created'))->toBe('2026-07-15 09:30:00')
+        ->and($iq->table('tCustomers')->value('Updated'))->toBe('2026-07-15 09:30:00')
+        ->and($iq->table('tProcessActions')->value('DateCreated'))->toBe('2026-07-15 09:30:00')
+        ->and($iq->table('tQuotes')->value('CreatedAt'))->toBe('2026-07-15 09:30:00')
+        ->and($iq->table('tQuotes')->value('UpdatedAt'))->toBe('2026-07-15 09:30:00');
+});

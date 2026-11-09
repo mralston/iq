@@ -6,6 +6,9 @@
 
 - `iq.timezone` setting (`IQ_TIMEZONE`): every date the service stamps is taken in it. Null, the
   default, uses the application's timezone.
+- Eloquent's automatic timestamps on every package model that has them (`tCustomers`,
+  `tProcessActions`, `tQuotes`, `tLists`, `tUsers`, `logtable`, `Process_Errors`) are taken in
+  `iq.timezone` too, through the `UsesIqTimezone` trait.
 - `CustomerService::withNovaQuoteUuid()` writes `tCustomers.NovaQuoteUuid` and allows a customer
   without a `model_id` (its `tQuotes` row gets `QuoteId` 0). The column is never written when it
   is not set.

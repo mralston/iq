@@ -225,7 +225,7 @@ class CustomerService
 
     private function timezone(): string
     {
-        return config('iq.timezone') ?? config('app.timezone') ?? date_default_timezone_get();
+        return Customer::iqTimezone();
     }
 
     /**
