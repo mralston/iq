@@ -88,7 +88,17 @@ class Customer extends Model
         'AppointmentId',
         'SvcPackId',
         'CustGuid',
+        'NovaQuoteUuid',
     ];
+
+    /**
+     * The customer written from a Nova quote, by tCustomers.NovaQuoteUuid. Only IQ databases that
+     * have the column can be searched this way.
+     */
+    public static function findByNovaQuoteUuid(string $uuid): ?Customer
+    {
+        return static::query()->where('NovaQuoteUuid', $uuid)->first();
+    }
 
     public function processActions(): HasMany
     {

@@ -3,6 +3,7 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Mralston\Iq\Models\Scopes\BranchScope;
 
 class Branch extends Model
@@ -19,8 +20,8 @@ class Branch extends Model
         static::addGlobalScope(new BranchScope);
     }
 
-    protected function users()
+    public function users(): HasMany
     {
-        return $this->hasMany(User::class);
+        return $this->hasMany(User::class, 'BranchId', 'Id');
     }
 }

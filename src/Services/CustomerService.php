@@ -34,6 +34,7 @@ class CustomerService
 {
     protected ?array $attrs = [];
     protected ?User $rep = null;
+    protected ?Branch $branch = null;
     protected ?Company $company = null;
     protected ?Tariff $tariff = null;
     protected ?SolarIrradianceZone $solarIrradianceZone = null;
@@ -45,6 +46,7 @@ class CustomerService
     protected ?TileType $tileType = null;
     protected ?ServicePackage $servicePackage = null;
     protected ?array $notes = [];
+    protected ?string $novaQuoteUuid = null;
 
     protected ?Customer $customer = null;
     protected ?Visit $visit = null;
@@ -135,6 +137,17 @@ class CustomerService
         return $this;
     }
 
+    /**
+     * Records the Nova quote this customer was sold from in tCustomers.NovaQuoteUuid. When it is
+     * not set the column is never written, so IQ databases without the column keep working, and
+     * createQuote() still requires attrs['model_id'].
+     */
+    public function withNovaQuoteUuid(?string $uuid = null): self
+    {
+        $this->novaQuoteUuid = $uuid;
+        return $this;
+    }
+
     public function withNotes(string $type, ?string $notes = null)
     {
         if (empty($notes)) {
@@ -146,28 +159,98 @@ class CustomerService
         return $this;
     }
 
+    /**
+     * Writes the customer and its install note, log, visit, invoice, process actions and quote in
+     * one transaction on the iq connection, so a failure part way leaves nothing behind.
+     *
+     * Everything set through the with* builders is cleared afterwards, whether create() succeeds
+     * or throws, because the facade hands out the same instance for the life of the process.
+     */
     public function create(): Customer
     {
-        return DB::transaction(function () {
+        try {
+            return DB::connection('iq')->transaction(function () {
 
-            $customer = $this->createCustomer();
+                $customer = $this->createCustomer();
 
-            $this->createInstallNote();
-            $this->createCustomerLog();
-            $this->visit = $this->createVisit();
-            $this->createCustomerInvoice();
-            $this->createProcessActions();
-            $this->createQuote();
-            // TODO: Create additional ProcessAction for EV charger??? TBC
+                $this->createInstallNote();
+                $this->createCustomerLog();
+                $this->visit = $this->createVisit();
+                $this->createCustomerInvoice();
+                $this->createProcessActions();
+                $this->createQuote();
+                // TODO: Create additional ProcessAction for EV charger??? TBC
 
-            return $customer;
-        });
+                return $customer;
+            });
+        } finally {
+            $this->reset();
+        }
+    }
+
+    /**
+     * Clears everything set through the with* builders and by a previous create().
+     */
+    public function reset(): self
+    {
+        $this->attrs = [];
+        $this->rep = null;
+        $this->branch = null;
+        $this->company = null;
+        $this->tariff = null;
+        $this->solarIrradianceZone = null;
+        $this->status = null;
+        $this->enquirySource = null;
+        $this->vatRate = null;
+        $this->templateType = null;
+        $this->panelType = null;
+        $this->tileType = null;
+        $this->servicePackage = null;
+        $this->notes = [];
+        $this->novaQuoteUuid = null;
+        $this->customer = null;
+        $this->visit = null;
+
+        return $this;
+    }
+
+    /**
+     * The current time in the timezone IQ's dates are written in: config('iq.timezone'), or the
+     * application's timezone when that is not set.
+     */
+    private function now(): Carbon
+    {
+        return Carbon::now($this->timezone());
+    }
+
+    private function timezone(): string
+    {
+        return config('iq.timezone') ?? config('app.timezone') ?? date_default_timezone_get();
+    }
+
+    /**
+     * Takes the next value of a counter on the company row (tUs). The row is re-read under an
+     * update lock inside create()'s transaction, so two sales made at once never get the same
+     * number. The caller's Company instance is given the new value as well.
+     */
+    private function nextCompanyNumber(string $column): int
+    {
+        $company = Company::query()
+            ->lockForUpdate()
+            ->findOrFail($this->company->getKey());
+
+        $company->{$column} = (int) $company->{$column} + 1;
+        $company->save();
+
+        $this->company->forceFill([$column => $company->{$column}])->syncOriginalAttribute($column);
+
+        return $company->{$column};
     }
 
     private function buildNotes(): string
     {
         return '***** ' .
-            Carbon::now()->format('d/m/Y h:i A') .
+            $this->now()->format('d/m/Y h:i A') .
             ' (Quote Notes) *****' .
             "\r\n" .
             collect($this->notes)->implode(' ');
@@ -190,7 +273,7 @@ class CustomerService
             ->reject(fn ($value) => empty($value))
             ->join(' ');
 
-        $now = Carbon::now();
+        $now = $this->now();
 
         $customerData = [
             'Name' => $this->attrs['customer_name'] ?? $fullName,
@@ -221,7 +304,7 @@ class CustomerService
             'Companyid' => $this->company?->Id,
             'IndustryTypeId' => $this->attrs['industry_type_id'] ?? Constants::DEFAULT_INDUSTRY_TYPE,
             'EnquiryType' => $this->attrs['enquiry_type'] ?? Constants::DEFAULT_ENQUIRY_TYPE,
-            'ImportId' => $this->attrs['model_id'],
+            'ImportId' => $this->attrs['model_id'] ?? null,
             'OtherId' => $this->attrs['other_id'] ?? Constants::DEFAULT_INTEGER,
             'LastUser' => config('iq.auto_user'),
             'PricePerKWH' => Constants::DEFAULT_PRICE_PER_KWH,
@@ -257,7 +340,7 @@ class CustomerService
             'DateInstall' => $this->attrs['install_date'] ?? null,
             'ContractPrice' => $this->attrs['contract_price'] ?? 0,
             'Wireless' => $this->attrs['wireless'] ?? 1,
-            'QuoteId' => $this->attrs['model_id'],
+            'QuoteId' => $this->attrs['model_id'] ?? null,
             'quote_updated' => $this->attrs['quote_updated'] ?? null,
             'ProjectStatus' => $this->attrs['project_status'] ?? 0,
             'DateRebook' => $this->attrs['rebook_date'] ?? '1899-12-30',
@@ -267,6 +350,10 @@ class CustomerService
             'SvcPackId' => $this->servicePackage?->Id,
             'CustGuid' => $this->attrs['cust_guid'] ?? null,
         ];
+
+        if (!is_null($this->novaQuoteUuid)) {
+            $customerData['NovaQuoteUuid'] = $this->novaQuoteUuid;
+        }
 
         return $this->customer = Customer::create($customerData);
     }
@@ -280,7 +367,7 @@ class CustomerService
         return InstallNote::create([
             'CustomerId' => $this->customer->Id,
             'UserId' => $this->rep?->Id,
-            'DateNote' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
+            'DateNote' => $this->attrs['contract_signed_at'] ?? $this->now(),
             'Notes' => 'New Install',
             'StatusId' => 0
         ]);
@@ -295,9 +382,9 @@ class CustomerService
         return CustomerLog::create([
             'CustomerId' => $this->customer->Id,
             'Name' => $this->attrs['customer_name'] ?? collect([
-                $this->attrs['title'],
-                $this->attrs['first_name'],
-                $this->attrs['last_name']
+                $this->attrs['title'] ?? null,
+                $this->attrs['first_name'] ?? null,
+                $this->attrs['last_name'] ?? null
             ])->join(' '),
             'Postcode' => $this->attrs['post_code'],
             'SortName' => Str::of($this->attrs['last_name'])->upper()->trim()
@@ -310,25 +397,22 @@ class CustomerService
             throw new NoCustomerException();
         }
 
-        // Increment LastOrderNo on company
-        $this->company->update([
-            $this->company->LastOrderNo = $this->company->LastOrderNo + 1
-        ]);
+        $orderNo = $this->nextCompanyNumber('LastOrderNo');
 
         // Create Visit
         return Visit::create([
             'CustomerId' => $this->customer->Id,
-            'VisitDate' => Carbon::now(),
+            'VisitDate' => $this->now(),
             'UserId' => config('iq.auto_user'),
             'NoPanels' => $this->attrs['panel_quantity'] ?? null,
-            'PanelTypeId' => $this->panelType?->id,
+            'PanelTypeId' => $this->panelType?->Id,
             'StatusId' => Constants::DEFAULT_VISIT_STATUS_ID,
             'VatRateId' => $this->vatRate?->Id,
-            'DateSold' => $this->attrs['contract_signed_at'] ?? Carbon::now(),
-            'Reference' => 'AU/' . $this->company->LastOrderNo,
+            'DateSold' => $this->attrs['contract_signed_at'] ?? $this->now(),
+            'Reference' => 'AU/' . $orderNo,
             'TileTypeId' => $this->tileType?->Id,
             'Scaffold' => $this->attrs['scaffold_required'] ?? 0, // TODO: Populate
-            'ExpiryDate' => Carbon::now()
+            'ExpiryDate' => $this->now()
         ]);
     }
 
@@ -338,17 +422,14 @@ class CustomerService
             throw new NoCustomerException();
         }
 
-        // Increment LastCustInvoice on company
-        $this->company->update([
-            $this->company->LastCustInvoice = $this->company->LastCustInvoice + 1
-        ]);
+        $invoiceNo = $this->nextCompanyNumber('LastCustInvoice');
 
         // Create CustomerInvoice
         return CustomerInvoice::create([
             'CustomerId' => $this->customer->Id,
-            'InvDate' => Carbon::now(),
+            'InvDate' => $this->now(),
             'UserId' => config('iq.auto_user'),
-            'InvoiceNo' => $this->company->LastCustInvoice,
+            'InvoiceNo' => $invoiceNo,
             'VATRateId' => $this->vatRate?->Id,
             'AmountDue' => $this->attrs['contract_price'] ?? null,
             'OrderId' => $this->visit?->Id, // At Richard Gregory's request
@@ -374,7 +455,7 @@ class CustomerService
                     'CustomerId' => $this->customer->Id,
                     'ProcessId' => $processTemplate->Id,
                     'Description' => $processTemplate->Description,
-                    'DateDue' => Carbon::today()->addDays($processTemplate->ElapseDays),
+                    'DateDue' => Carbon::today($this->timezone())->addDays($processTemplate->ElapseDays),
                     'DateChecked' => '1899-12-30',
                     'SequenceId' => $this->templateType->ProcessId,
                     'BranchId' => Constants::HEAD_OFFICE_BRANCH_ID,
@@ -414,13 +495,15 @@ class CustomerService
             throw new NoCustomerException();
         }
 
-        if (empty($this->attrs['model_id'])) {
+        // A Nova sale has no portal quote id. tQuotes.QuoteId is NOT NULL and portal ids start
+        // at 1, so a Nova sale is written with 0.
+        if (empty($this->attrs['model_id']) && is_null($this->novaQuoteUuid)) {
             throw new NoQuoteException();
         }
 
         return Quote::create([
             'CustomerId' => $this->customer->Id,
-            'QuoteId' => $this->attrs['model_id'],
+            'QuoteId' => empty($this->attrs['model_id']) ? 0 : $this->attrs['model_id'],
             'MpanNumber' => $this->attrs['mpan_number'] ?? null,
             'ExportTariff' => $this->attrs['export_tariff'] ?? null,
             'FeedInTariff' => $this->attrs['feed_in_tariff'] ?? null,

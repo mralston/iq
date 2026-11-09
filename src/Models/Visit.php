@@ -24,5 +24,6 @@ class Visit extends Model
         'TileTypeId',
         'Scaffold',
         'ExpiryDate',
+        'VatRateId',
     ];
 }
