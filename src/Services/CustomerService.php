@@ -457,7 +457,9 @@ class CustomerService
                     'Description' => $processTemplate->Description,
                     'DateDue' => Carbon::today($this->timezone())->addDays($processTemplate->ElapseDays),
                     'DateChecked' => '1899-12-30',
-                    'SequenceId' => $this->templateType->ProcessId,
+                    // tLists has no ProcessId column, so this has always been written as null; read it
+                    // without tripping strict mode's missing-attribute check.
+                    'SequenceId' => $this->templateType->getAttributes()['ProcessId'] ?? null,
                     'BranchId' => Constants::HEAD_OFFICE_BRANCH_ID,
                     'DecOrProc' => $processTemplate->DecOrProc
                 ]);
