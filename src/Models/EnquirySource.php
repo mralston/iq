@@ -3,10 +3,13 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Mralston\Iq\Models\Concerns\UsesIqTimezone;
 use Mralston\Iq\Models\Scopes\EnquirySourceScope;
 
 class EnquirySource extends Model
 {
+    use UsesIqTimezone;
+
     protected $connection = 'iq';
     protected $table = 'tLists';
     protected $primaryKey = 'Id';

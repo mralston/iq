@@ -3,10 +3,13 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Mralston\Iq\Models\Concerns\UsesIqTimezone;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
+    use UsesIqTimezone;
+
     protected $connection = 'iq';
     protected $table = 'tCustomers';
     protected $primaryKey = 'Id';
@@ -88,7 +91,17 @@ class Customer extends Model
         'AppointmentId',
         'SvcPackId',
         'CustGuid',
+        'NovaQuoteUuid',
     ];
+
+    /**
+     * The customer written from a Nova quote, by tCustomers.NovaQuoteUuid. Only IQ databases that
+     * have the column can be searched this way.
+     */
+    public static function findByNovaQuoteUuid(string $uuid): ?Customer
+    {
+        return static::query()->where('NovaQuoteUuid', $uuid)->first();
+    }
 
     public function processActions(): HasMany
     {

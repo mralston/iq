@@ -3,9 +3,12 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Mralston\Iq\Models\Concerns\UsesIqTimezone;
 
 class Log extends Model
 {
+    use UsesIqTimezone;
+
     protected $connection = 'iq';
     protected $table = 'logtable';
 

@@ -3,9 +3,12 @@
 namespace Mralston\Iq\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Mralston\Iq\Models\Concerns\UsesIqTimezone;
 
 class Quote extends Model
 {
+    use UsesIqTimezone;
+
     protected $connection = 'iq';
     protected $table = 'tQuotes';
     protected $primaryKey = 'Id';
